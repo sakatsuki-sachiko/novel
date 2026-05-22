@@ -23,7 +23,9 @@ int main()
     int space_error_count = 0;
     int line_byte_count = 0;
     
-    
+    //現在の行数をカウントする
+    int current_line = 1;
+
 
     // ファイルの最後まで1バイトずつ読み込む
     while ((c = fgetc(fp)) != EOF) 
@@ -31,6 +33,7 @@ int main()
         // 改行が来たら、行のバイト数をリセットする
         if (c == '\n')
         {
+            current_line++;
             line_byte_count = 0;
         }
 
@@ -46,8 +49,9 @@ int main()
                 // 「全角スペース(E3 80 80)」でも「カギ括弧(E3 80 8C)」でもない場合
             if (!((prev2 == 0xE3 && prev1 == 0x80 && c == 0x80) || 
                       (prev2 == 0xE3 && prev1 == 0x80 && c == 0x8C)))
-
+                      
             {
+                printf("⚠️ [警告] %d行目: 行頭の字下げがありません。\n", current_line);
                 space_error_count++;
             }
         
@@ -55,6 +59,7 @@ int main()
             else if (line_byte_count == 1 && c < 0x80)
             {
                 space_error_count++;
+                printf("⚠️ [警告] %d行目: 行頭の字下げがありません。\n", current_line);
             }
         }
 
@@ -86,7 +91,7 @@ int main()
 
     // 結果発表
     printf("========== 解析結果 ==========\n");
-    printf("総文字数（改行等含む）: %d 文字\n", char_count);
+    printf("総文字数（改行等含まない）: %d 文字\n", char_count);
     printf("三点リーダー(…)の数 : %d 個\n", santen_count);
     printf("ダッシュ(—)の数     : %d 個\n", dash_count);
     printf("==============================\n");
