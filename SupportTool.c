@@ -18,13 +18,47 @@ int main()
     int c;
     int prev1 = 0, prev2 = 0;
     int dash_count = 0;  
+
+    //スペースのエラーをカウントする変数
+    int space_error_count = 0;
+    int line_byte_count = 0;
     
     
 
     // ファイルの最後まで1バイトずつ読み込む
     while ((c = fgetc(fp)) != EOF) 
     {
+        // 改行が来たら、行のバイト数をリセットする
+        if (c == '\n')
+        {
+            line_byte_count = 0;
+        }
+
         
+        else if (c != '\r') 
+        {
+            line_byte_count++;
+        }
+            
+            // 行頭の3バイトが揃った瞬間に判定
+        if (line_byte_count == 3) 
+        {
+                // 「全角スペース(E3 80 80)」でも「カギ括弧(E3 80 8C)」でもない場合
+            if (!((prev2 == 0xE3 && prev1 == 0x80 && c == 0x80) || 
+                      (prev2 == 0xE3 && prev1 == 0x80 && c == 0x8C)))
+
+            {
+                space_error_count++;
+            }
+        
+            // もし行頭の1文字目が半角（英語や数字）だった場合はその時点でエラー
+            else if (line_byte_count == 1 && c < 0x80)
+            {
+                space_error_count++;
+            }
+        }
+
+
         //１６進数を足して、先頭ビットが１０でなければカウントを増やす
         if ((c & 0xC0) != 0x80) 
         {
@@ -78,6 +112,16 @@ int main()
     else
     {
         printf("✅ダッシュは偶数です。\n");
+    }
+
+    if (space_error_count > 0) 
+    {
+        printf("⚠️警告：行頭の全角スペース（字下げ）忘れが %d 箇所あります！\n", space_error_count);
+    } 
+
+    else 
+    {
+        printf("✅行頭の字下げ（会話文含む）は完璧です。\n");
     }
 
     return 0;
