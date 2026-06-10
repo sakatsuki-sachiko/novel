@@ -26,6 +26,8 @@ int main()
     //現在の行数をカウントする
     int current_line = 1;
 
+    int double_period_count = 0;
+
 
     // ファイルの最後まで1バイトずつ読み込む
     while ((c = fgetc(fp)) != EOF) 
@@ -55,12 +57,6 @@ int main()
                 space_error_count++;
             }
         
-            // もし行頭の1文字目が半角（英語や数字）だった場合はその時点でエラー
-            else if (line_byte_count == 1 && c < 0x80)
-            {
-                space_error_count++;
-                printf("⚠️ [警告] %d行目: 行頭の字下げがありません。\n", current_line);
-            }
         }
 
 
