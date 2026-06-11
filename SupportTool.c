@@ -16,6 +16,11 @@ int main()
     int santen_count = 0;  
     int dash_count = 0;  
 
+    // カギ括弧の数をカウントする変数
+    int open_bracket_count = 0;  // 始めカギ括弧 「
+    int close_bracket_count = 0; // 閉じカギ括弧 」
+
+    // ファイルから一バイトつづ読み込む変数
     int c;
 
     // 五バイトまで監視するための変数
@@ -59,8 +64,6 @@ int main()
         // 【2段目】行の3バイト目が揃った瞬間の判定
         // 1バイト目が 0xE3 だった場合のみ、3バイト目まで待って正確な文字を判定する。
         // 全角スペース、カギ括弧以外の時、検知
-
-
         else if (line_byte_count == 3 && prev2 == 0xE3) 
         {
             if (!((prev2 == 0xE3 && prev1 == 0x80 && c == 0x80) || 
@@ -76,7 +79,7 @@ int main()
         if (prev5 == 0xE3 && prev4 == 0x80 && prev3 == 0x82 && 
             prev2 == 0xE3 && prev1 == 0x80 && c == 0x82) 
         {
-            printf("⚠️ [警告] %d行目: 句点「。」が連続しています。打ちミスの可能性があります。\n", current_line);
+            printf("⚠️ [警告] %d行目: 「。。」の連続入力ミスを検知しました！\n", current_line);
             typo_error_count++;
         }
 
@@ -87,6 +90,19 @@ int main()
             printf("⚠️ [警告] %d行目: 「、、」の連続入力ミスを検知しました！\n", current_line);
             typo_error_count++;
         }
+
+
+        // 「（始めカギ括弧：E3 80 8C）の検知
+        if (prev2 == 0xE3 && prev1 == 0x80 && c == 0x8C) 
+        {
+            open_bracket_count++;
+        }
+
+        // 」（閉じカギ括弧：E3 80 8D）の検知
+        if (prev2 == 0xE3 && prev1 == 0x80 && c == 0x8D) 
+        {
+            close_bracket_count++;
+        }        
 
 
         //16進数c0でマスク処理。後続バイトでなければ文字数カウントを増やす
@@ -118,11 +134,9 @@ int main()
     fclose(fp); 
 
     // 結果発表
-    printf("========== 解析結果 ==========\n");
+    printf("\n\n========== 解析結果 ==========\n");
     printf("総文字数（改行等含まない）: %d 文字\n", char_count);
-    printf("三点リーダー(…)の数 : %d 個\n", santen_count);
-    printf("ダッシュ(—)の数     : %d 個\n", dash_count);
-    printf("==============================\n");
+    printf("==============================\n\n");
 
 
     // …の奇数偶数の判定
@@ -143,6 +157,16 @@ int main()
     else
     {
         printf("✅句読点の連続入力ミス（タイポ）はありません。\n");
+    }
+
+    // カギ括弧の閉じ忘れチェック
+    if (open_bracket_count != close_bracket_count)
+    {
+        printf("⚠️警告：カギ括弧の数が合いません！ 始め「が %d 個、閉じ」が %d 個です。\n", open_bracket_count, close_bracket_count);
+    }
+    else
+    {
+        printf("✅カギ括弧の対応（「」のペア）は完璧です。\n");
     }
 
 
