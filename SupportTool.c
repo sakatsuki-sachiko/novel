@@ -14,16 +14,20 @@ int main()
     //　文字数、三点リーダーの数、ダッシュの数をカウントする変数
     int char_count = 0;      
     int santen_count = 0;  
-    int c;
-    int prev1 = 0, prev2 = 0;
     int dash_count = 0;  
 
-    //スペースのエラーをカウントする変数
-    int space_error_count = 0;
-    int line_byte_count = 0;
+    int c;
+
+    // 五バイトまで監視するための変数
+    int prev1 = 0, prev2 = 0, prev3 = 0, prev4 = 0, prev5 = 0;;
     
+    //インデントのエラー、連続打ちをカウントする変数
+    int space_error_count = 0;
+    int typo_error_count = 0;
+
     //現在の行数をカウントする
     int current_line = 1;
+    int line_byte_count = 0;
 
 
     // ファイルの最後まで1バイトずつ読み込む
@@ -68,6 +72,22 @@ int main()
         }
 
 
+        // 「。。」の検知（E3 80 82 が2連続 = 6バイト）
+        if (prev5 == 0xE3 && prev4 == 0x80 && prev3 == 0x82 && 
+            prev2 == 0xE3 && prev1 == 0x80 && c == 0x82) 
+        {
+            printf("⚠️ [警告] %d行目: 句点「。」が連続しています。打ちミスの可能性があります。\n", current_line);
+            typo_error_count++;
+        }
+
+        // 「。。」の検知（E3 80 82 が2連続 = 6バイト）
+        if (prev5 == 0xE3 && prev4 == 0x80 && prev3 == 0x82 && 
+            prev2 == 0xE3 && prev1 == 0x80 && c == 0x82) 
+        {
+            printf("⚠️ [警告] %d行目: 句点「。」が連続しています。打ちミスの可能性があります。\n", current_line);
+            typo_error_count++;
+        }
+
 
         //16進数c0でマスク処理。後続バイトでなければ文字数カウントを増やす
         if ((c & 0xC0) != 0x80) 
@@ -87,7 +107,10 @@ int main()
             dash_count++;
         }
 
-        // 前二バイトを保存しつつループを再開
+        // 前五バイトへシフトし、五バイトまで保管する
+        prev5 = prev4;
+        prev4 = prev3;
+        prev3 = prev2;
         prev2 = prev1;
         prev1 = c;
     }
@@ -110,6 +133,16 @@ int main()
     else 
     {
         printf("✅三点リーダーは偶数です。ルールは完璧に守られています！\n");
+    }
+
+    // 「。。」や「、、」の連続入力ミスの判定
+    if (typo_error_count > 0)
+    {
+        printf("⚠️警告：「。。」や「、、」の連続入力ミスが %d 箇所あります！\n", typo_error_count);
+    }
+    else
+    {
+        printf("✅句読点の連続入力ミス（タイポ）はありません。\n");
     }
 
 
