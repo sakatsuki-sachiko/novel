@@ -80,11 +80,11 @@ int main()
             typo_error_count++;
         }
 
-        // 「。。」の検知（E3 80 82 が2連続 = 6バイト）
-        if (prev5 == 0xE3 && prev4 == 0x80 && prev3 == 0x82 && 
-            prev2 == 0xE3 && prev1 == 0x80 && c == 0x82) 
+        // 「、、」の検知 (E3 80 81 が2連続)
+        if (prev5 == 0xE3 && prev4 == 0x80 && prev3 == 0x81 && 
+            prev2 == 0xE3 && prev1 == 0x80 && c   == 0x81) 
         {
-            printf("⚠️ [警告] %d行目: 句点「。」が連続しています。打ちミスの可能性があります。\n", current_line);
+            printf("⚠️ [警告] %d行目: 「、、」の連続入力ミスを検知しました！\n", current_line);
             typo_error_count++;
         }
 
