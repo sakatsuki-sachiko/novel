@@ -16,6 +16,11 @@ int main()
     int santen_count = 0;  
     int dash_count = 0;  
 
+    // 三点リーダーとダッシュのエラーの数をカウントする変数
+    int santen_error_count = 0;
+    int dash_error_count = 0;
+
+
     // カギ括弧の数をカウントする変数
     int open_bracket_count = 0;  // 始めカギ括弧 「
     int close_bracket_count = 0; // 閉じカギ括弧 」
@@ -41,6 +46,24 @@ int main()
         // 改行が来たら、行のバイト数をリセットする
         if (c == '\n')
         {
+            // その行の中で、三点リーダーが奇数（単独使用など）ならエラー出力
+            if (santen_count % 2 != 0) 
+            {
+                printf("⚠️ [警告] %d行目: 三点リーダーが奇数です（「……」のルール違反）\n", current_line);
+                santen_error_count++;
+            }
+            // その行の中で、ダッシュが奇数ならエラー出力
+            if (dash_count % 2 != 0) 
+            {
+                printf("⚠️ [警告] %d行目: ダッシュが奇数です（「——」のルール違反）\n", current_line);
+                dash_error_count++;
+            }
+
+            // 次の行の計測のために、記号のカウントをゼロに戻す（リセット）
+            santen_count = 0;
+            dash_count = 0;
+
+            // 行数を増やし、バイト数をリセット
             current_line++;
             line_byte_count = 0;
         }
@@ -131,22 +154,37 @@ int main()
         prev1 = c;
     }
     
-    fclose(fp); 
+        // ファイル末尾（最後の行）が改行されずに終わっていた場合の最終判定
+    if (santen_count % 2 != 0) 
+    {
+        printf("⚠️ [警告] %d行目: 三点リーダーが奇数です（「……」のルール違反）\n", current_line);
+        santen_error_count++;
+    }
+    if (dash_count % 2 != 0) 
+    {
+        printf("⚠️ [警告] %d行目: ダッシュが奇数です（「——」のルール違反）\n", current_line);
+        dash_error_count++;
+    }
+
+    fclose(fp);
 
     // 結果発表
     printf("\n\n========== 解析結果 ==========\n");
     printf("総文字数（改行等含まない）: %d 文字\n", char_count);
+    printf("三点リーダーのエラー数: %d\n", santen_error_count);
+    printf("ダッシュのエラー数: %d\n", dash_error_count);
     printf("==============================\n\n");
 
 
-    // …の奇数偶数の判定
-    if (santen_count % 2 != 0) 
+    // …のルールの最終判定
+    if (santen_error_count > 0) 
     {
-        printf("⚠️警告：三点リーダーが奇数です！「……」のルールから外れています！\n");
+        printf("⚠️警告：三点リーダーのルール違反が %d 箇所あります！\n", santen_error_count);
     } 
+    
     else 
     {
-        printf("✅三点リーダーは偶数です。ルールは完璧に守られています！\n");
+        printf("✅三点リーダーはすべて偶数です。ルールは完璧に守られています。\n");
     }
 
     // 「。。」や「、、」の連続入力ミスの判定
@@ -154,6 +192,7 @@ int main()
     {
         printf("⚠️警告：「。。」や「、、」の連続入力ミスが %d 箇所あります！\n", typo_error_count);
     }
+
     else
     {
         printf("✅句読点の連続入力ミス（タイポ）はありません。\n");
@@ -164,22 +203,24 @@ int main()
     {
         printf("⚠️警告：カギ括弧の数が合いません！ 始め「が %d 個、閉じ」が %d 個です。\n", open_bracket_count, close_bracket_count);
     }
+
     else
     {
         printf("✅カギ括弧の対応（「」のペア）は完璧です。\n");
     }
 
 
-    //ダッシュの奇数偶数の判定
-    if (dash_count % 2 != 0)
+    // ダッシュのルールの最終判定
+   if (dash_error_count > 0)
     {
-        printf("⚠️警告：ダッシュが奇数です！「——」のルールから外れています！\n");
+        printf("⚠️警告：ダッシュのルール違反が %d 箇所あります！\n", dash_error_count);
     }
 
     else
     {
-        printf("✅ダッシュは偶数です。\n");
+        printf("✅ダッシュはすべて偶数です。\n");
     }
+
 
     if (space_error_count > 0) 
     {
