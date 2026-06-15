@@ -21,15 +21,17 @@ int main()
     int dash_error_count = 0;
 
 
-    // カギ括弧の数をカウントする変数
-    int open_bracket_count = 0;  // 始めカギ括弧 「
-    int close_bracket_count = 0; // 閉じカギ括弧 」
+    // カギ括弧の状態とエラーを管理する変数
+    int is_bracket_open = 0;          // ０なら閉じている、１なら開いている
+    int bracket_opened_line = 0;      //「 が開かれた行数を記憶する変数
+    int bracket_error_count = 0;      //カギ括弧のエラーの数をカウントする変数
+
 
     // ファイルから一バイトつづ読み込む変数
     int c;
 
-    // 五バイトまで監視するための変数
-    int prev1 = 0, prev2 = 0, prev3 = 0, prev4 = 0, prev5 = 0;;
+    // 五バイトまで監視するための変数（なぜかコロンが二つあったので消去）
+    int prev1 = 0, prev2 = 0, prev3 = 0, prev4 = 0, prev5 = 0;
     
     //インデントのエラー、連続打ちをカウントする変数
     int space_error_count = 0;
@@ -118,14 +120,38 @@ int main()
         // 「（始めカギ括弧：E3 80 8C）の検知
         if (prev2 == 0xE3 && prev1 == 0x80 && c == 0x8C) 
         {
-            open_bracket_count++;
+            if (is_bracket_open == 1)
+            {
+                // すでに開いているのに、また「が来た。つまり前の「が閉じられていない
+                printf("⚠️ [警告] %d行目: 閉じカギ括弧「」」がありません。（%d行目で開かれたカギ括弧が未完了です）\n", current_line, bracket_opened_line);
+                bracket_error_count++;
+                // 新しい「の行数で記憶を上書きし、開いた状態は継続
+                // これにより、複数回「「が続いても、最初の「だけがエラーとしてカウントされる
+                bracket_opened_line = current_line;
+            }
+            else
+            {
+                // 正常に開いた
+                is_bracket_open = 1;
+                bracket_opened_line = current_line; // 開いた行数を記憶
+            }
         }
 
         // 」（閉じカギ括弧：E3 80 8D）の検知
         if (prev2 == 0xE3 && prev1 == 0x80 && c == 0x8D) 
         {
-            close_bracket_count++;
-        }        
+            if (is_bracket_open == 0)
+            {
+                // 開いていないのに「」」が来た（余分な閉じ括弧）
+                printf("⚠️ [警告] %d行目: 余分な閉じカギ括弧「」」があります。（対応する「がありません）\n", current_line);
+                bracket_error_count++;
+            }
+            else
+            {
+                // 正常に閉じた
+                is_bracket_open = 0;
+            }
+        }
 
 
         //16進数c0でマスク処理。後続バイトでなければ文字数カウントを増やす
@@ -166,6 +192,14 @@ int main()
         dash_error_count++;
     }
 
+    // ファイル末尾でカギ括弧が開きっぱなしになっていないかの最終判定
+    if (is_bracket_open == 1)
+    {
+        printf("⚠️ [警告] %d行目: ファイルの最後まで閉じカギ括弧「」」がありません。（%d行目で開かれています）\n", current_line, bracket_opened_line);
+        bracket_error_count++;
+    }
+
+
     fclose(fp);
 
     // 結果発表
@@ -181,7 +215,7 @@ int main()
     {
         printf("⚠️警告：三点リーダーのルール違反が %d 箇所あります！\n", santen_error_count);
     } 
-    
+
     else 
     {
         printf("✅三点リーダーはすべて偶数です。ルールは完璧に守られています。\n");
@@ -198,12 +232,11 @@ int main()
         printf("✅句読点の連続入力ミス（タイポ）はありません。\n");
     }
 
-    // カギ括弧の閉じ忘れチェック
-    if (open_bracket_count != close_bracket_count)
+    // カギ括弧のエラーチェック
+    if (bracket_error_count > 0)
     {
-        printf("⚠️警告：カギ括弧の数が合いません！ 始め「が %d 個、閉じ」が %d 個です。\n", open_bracket_count, close_bracket_count);
+        printf("⚠️警告：カギ括弧の対応エラー（閉じ忘れ、余分な括弧）が %d 箇所あります！\n", bracket_error_count);
     }
-
     else
     {
         printf("✅カギ括弧の対応（「」のペア）は完璧です。\n");
